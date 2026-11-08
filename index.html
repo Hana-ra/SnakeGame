@@ -30,15 +30,19 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         
-        /* چیدمان دستی دکمه‌ها برای جلوگیری از هرگونه تداخل با RTL */
-        .controls-container {
+        /* چیدمان دکمه‌ها با استفاده از Flexbox ساده (بدون تداخل با RTL) */
+        .controls {
             margin-top: 20px;
-            position: relative;
-            width: 200px;
-            height: 130px;
-            direction: ltr; /* این خط حیاتی است تا چپ و راست درست شوند */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            direction: ltr; /* این خط باعث می‌شود چپ و راست کاملاً درست باشند */
         }
-        
+        .row {
+            display: flex;
+            gap: 10px;
+        }
         .btn {
             background-color: #4CAF50;
             border: none;
@@ -51,17 +55,10 @@
             cursor: pointer;
             user-select: none;
             box-shadow: 0 4px #2E7D32;
-            position: absolute;
             width: 60px;
             height: 60px;
         }
         .btn:active { box-shadow: 0 2px #2E7D32; transform: translateY(2px); }
-        
-        /* مختصات دقیق هر دکمه روی صفحه */
-        .btn-up { top: 0; left: 70px; }
-        .btn-left { top: 65px; left: 0; }
-        .btn-down { top: 65px; left: 70px; }
-        .btn-right { top: 65px; left: 140px; }
         
         .game-over {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -80,11 +77,16 @@
     <div class="score-board">امتیاز: <span id="score">0</span></div>
     <canvas id="gameCanvas" width="300" height="300"></canvas>
 
-    <div class="controls-container">
-        <button class="btn btn-up" onclick="changeDirection('UP')">▲</button>
-        <button class="btn btn-left" onclick="changeDirection('LEFT')">◀</button>
-        <button class="btn btn-down" onclick="changeDirection('DOWN')">▼</button>
-        <button class="btn btn-right" onclick="changeDirection('RIGHT')">▶</button>
+    <!-- دکمه‌ها با چیدمان بسیار ساده و مطمئن -->
+    <div class="controls">
+        <div class="row">
+            <button class="btn" onclick="changeDirection('UP')">▲</button>
+        </div>
+        <div class="row">
+            <button class="btn" onclick="changeDirection('LEFT')">◀</button>
+            <button class="btn" onclick="changeDirection('DOWN')">▼</button>
+            <button class="btn" onclick="changeDirection('RIGHT')">▶</button>
+        </div>
     </div>
 
     <div class="game-over" id="gameOver">
@@ -116,7 +118,7 @@
             gameOverElement.style.display = 'none';
             generateFood();
             if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, 220); // سرعت
+            gameInterval = setInterval(gameLoop, 220);
             draw();
         }
 
@@ -163,13 +165,13 @@
             if (direction === 'LEFT') head.x -= 1;
             if (direction === 'RIGHT') head.x += 1;
 
-            // 🟢 جادوی عبور از دیوار (اگر از یک طرف خارج شد، از طرف دیگر وارد شود)
+            // عبور از دیوار
             if (head.x < 0) head.x = maxTiles - 1;
             if (head.x >= maxTiles) head.x = 0;
             if (head.y < 0) head.y = maxTiles - 1;
             if (head.y >= maxTiles) head.y = 0;
 
-            // فقط برخورد با خودش باعث باخت می‌شود
+            // برخورد با خودش
             for (let segment of snake) { 
                 if (head.x === segment.x && head.y === segment.y) return gameOver(); 
             }
