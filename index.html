@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>بازی مار | Snake Game</title>
     
-    <!-- تنظیمات تبدیل به اپلیکیشن (PWABuilder به این نیاز دارد) -->
     <link rel="manifest" href="manifest.json">
-    <!-- آیکون به صورت خودکار توسط مرورگر ساخته می‌شود -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234CAF50%22/><circle cx=%2250%22 cy=%2250%22 r=%2230%22 fill=%22white%22/></svg>">
 
     <style>
@@ -53,6 +51,7 @@
             box-shadow: 0 4px #2E7D32;
         }
         .btn:active { box-shadow: 0 2px #2E7D32; transform: translateY(2px); }
+        /* چیدمان دکمه‌ها */
         .btn-up { grid-column: 2; grid-row: 1; }
         .btn-left { grid-column: 1; grid-row: 2; }
         .btn-down { grid-column: 2; grid-row: 2; }
@@ -75,7 +74,8 @@
     <div class="score-board">امتیاز: <span id="score">0</span></div>
     <canvas id="gameCanvas" width="300" height="300"></canvas>
 
-    <div class="controls">
+    <!-- دکمه‌های کنترل (دستورات کاملاً درست و بدون وارونگی) -->
+    <div class="controls" dir="ltr">
         <button class="btn btn-up" onclick="changeDirection('UP')">▲</button>
         <button class="btn btn-left" onclick="changeDirection('LEFT')">◀</button>
         <button class="btn btn-down" onclick="changeDirection('DOWN')">▼</button>
@@ -88,7 +88,6 @@
     </div>
 
     <script>
-        // ثبت سرویس ورکر برای اجرای آفلاین
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
@@ -112,7 +111,8 @@
             gameOverElement.style.display = 'none';
             generateFood();
             if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, 150);
+            // سرعت بازی: 220 میلی‌ثانیه (هرچی بیشتر، کندتر)
+            gameInterval = setInterval(gameLoop, 220);
             draw();
         }
 
