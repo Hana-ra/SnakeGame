@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بازی مار | Snake Game</title>
+    
+    <!-- تنظیمات تبدیل به اپلیکیشن (PWABuilder به این نیاز دارد) -->
+    <link rel="manifest" href="manifest.json">
+    <!-- آیکون به صورت خودکار توسط مرورگر ساخته می‌شود -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%234CAF50%22/><circle cx=%2250%22 cy=%2250%22 r=%2230%22 fill=%22white%22/></svg>">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Tahoma, sans-serif;
+            color: white;
+            touch-action: none;
+        }
+        .score-board { font-size: 24px; margin-bottom: 10px; font-weight: bold; }
+        canvas {
+            background-color: #2a2a2a;
+            border: 3px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn {
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px #2E7D32;
+        }
+        .btn:active { box-shadow: 0 2px #2E7D32; transform: translateY(2px); }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        
+        .game-over {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); display: none;
+            flex-direction: column; justify-content: center; align-items: center; z-index: 10;
+        }
+        .game-over h2 { color: #f44336; font-size: 36px; margin-bottom: 20px; }
+        .restart-btn {
+            padding: 15px 30px; font-size: 18px; background-color: #008CBA;
+            color: white; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px #005f7f;
+        }
+        .restart-btn:active { box-shadow: 0 2px #005f7f; transform: translateY(2px); }
+    </style>
+</head>
+<body>
+    <div class="score-board">امتیاز: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
+
+    <div class="controls">
+        <button class="btn btn-up" onclick="changeDirection('UP')">▲</button>
+        <button class="btn btn-left" onclick="changeDirection('LEFT')">◀</button>
+        <button class="btn btn-down" onclick="changeDirection('DOWN')">▼</button>
+        <button class="btn btn-right" onclick="changeDirection('RIGHT')">▶</button>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <h2>بازی تمام شد!</h2>
+        <button class="restart-btn" onclick="restartGame()">شروع دوباره</button>
+    </div>
+
+    <script>
+        // ثبت سرویس ورکر برای اجرای آفلاین
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameOverElement = document.getElementById('gameOver');
+
+        const box = 15;
+        const canvasSize = 300;
+        const maxTiles = canvasSize / box;
+        let snake, direction, nextDirection, food, score, gameInterval;
+
+        function init() {
+            snake = [{x: 10, y: 10}, {x: 10, y: 11}, {x: 10, y: 12}];
+            direction = 'RIGHT';
+            nextDirection = 'RIGHT';
+            score = 0;
+            scoreElement.innerText = score;
+            gameOverElement.style.display = 'none';
+            generateFood();
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(gameLoop, 150);
+            draw();
+        }
+
+        function generateFood() {
+            food = { x: Math.floor(Math.random() * maxTiles), y: Math.floor(Math.random() * maxTiles) };
+            for (let segment of snake) {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood(); return;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+            for (let i = 0; i < snake.length; i++) {
+                let segment = snake[i];
+                ctx.fillStyle = (i === 0) ? '#4CAF50' : '#8BC34A';
+                ctx.fillRect(segment.x * box, segment.y * box, box - 1, box - 1);
+                if (i === 0) {
+                    ctx.fillStyle = 'white';
+                    let eyeX = segment.x * box; let eyeY = segment.y * box;
+                    if (direction === 'RIGHT') { ctx.fillRect(eyeX + 9, eyeY + 3, 3, 3); ctx.fillRect(eyeX + 9, eyeY + 9, 3, 3); }
+                    if (direction === 'LEFT') { ctx.fillRect(eyeX + 3, eyeY + 3, 3, 3); ctx.fillRect(eyeX + 3, eyeY + 9, 3, 3); }
+                    if (direction === 'UP') { ctx.fillRect(eyeX + 3, eyeY + 3, 3, 3); ctx.fillRect(eyeX + 9, eyeY + 3, 3, 3); }
+                    if (direction === 'DOWN') { ctx.fillRect(eyeX + 3, eyeY + 9, 3, 3); ctx.fillRect(eyeX + 9, eyeY + 9, 3, 3); }
+                }
+            }
+
+            ctx.beginPath();
+            ctx.arc(food.x * box + box/2, food.y * box + box/2, box/2 - 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#f44336';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function gameLoop() {
+            direction = nextDirection;
+            let head = {x: snake[0].x, y: snake[0].y};
+            if (direction === 'UP') head.y -= 1;
+            if (direction === 'DOWN') head.y += 1;
+            if (direction === 'LEFT') head.x -= 1;
+            if (direction === 'RIGHT') head.x += 1;
+
+            if (head.x < 0 || head.x >= maxTiles || head.y < 0 || head.y >= maxTiles) return gameOver();
+            for (let segment of snake) { if (head.x === segment.x && head.y === segment.y) return gameOver(); }
+
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                scoreElement.innerText = score;
+                generateFood();
+            } else { snake.pop(); }
+            draw();
+        }
+
+        function gameOver() {
+            clearInterval(gameInterval);
+            gameOverElement.style.display = 'flex';
+        }
+
+        function changeDirection(newDir) {
+            if (newDir === 'UP' && direction !== 'DOWN') nextDirection = 'UP';
+            if (newDir === 'DOWN' && direction !== 'UP') nextDirection = 'DOWN';
+            if (newDir === 'LEFT' && direction !== 'RIGHT') nextDirection = 'LEFT';
+            if (newDir === 'RIGHT' && direction !== 'LEFT') nextDirection = 'RIGHT';
+        }
+
+        function restartGame() { init(); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'w') changeDirection('UP');
+            if (e.key === 'ArrowDown' || e.key === 's') changeDirection('DOWN');
+            if (e.key === 'ArrowLeft' || e.key === 'a') changeDirection('LEFT');
+            if (e.key === 'ArrowRight' || e.key === 'd') changeDirection('RIGHT');
+        });
+
+        init();
+    </script>
+</body>
+</html>
